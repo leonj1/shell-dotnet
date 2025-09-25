@@ -1,0 +1,62 @@
+{
+  "features": [
+    {
+      "name": "NewAuthFlow",
+      "enabled": false,
+      "description": "Enable the new authentication flow with enhanced security features",
+      "rolloutPercentage": 0.0,
+      "targetAudience": []
+    },
+    {
+      "name": "EnableMetrics",
+      "enabled": true,
+      "description": "Enable OpenTelemetry metrics collection and export",
+      "rolloutPercentage": 100.0,
+      "targetAudience": ["admin", "developer"]
+    },
+    {
+      "name": "UseDistributedCache",
+      "enabled": false,
+      "description": "Use Redis for distributed caching instead of in-memory cache",
+      "rolloutPercentage": 25.0,
+      "targetAudience": ["staging", "production"]
+    },
+    {
+      "name": "EnableSwagger",
+      "enabled": true,
+      "description": "Enable Swagger/OpenAPI documentation",
+      "rolloutPercentage": 100.0,
+      "targetAudience": ["development", "staging"]
+    },
+    {
+      "name": "DetailedLogging",
+      "enabled": false,
+      "description": "Enable detailed request/response logging for debugging",
+      "rolloutPercentage": 0.0,
+      "targetAudience": ["development"],
+      "rules": [
+        {
+          "property": "environment",
+          "operator": "equals",
+          "value": "development"
+        }
+      ]
+    },
+    {
+      "name": "ModuleHotReload",
+      "enabled": true,
+      "description": "Enable hot reloading of modules during development",
+      "rolloutPercentage": 100.0,
+      "targetAudience": ["development"]
+    },
+    {
+      "name": "AsyncModuleLoading",
+      "enabled": false,
+      "description": "Load modules asynchronously to improve startup performance",
+      "rolloutPercentage": 10.0,
+      "targetAudience": ["staging"]
+    }
+  ],
+  "lastUpdated": "2025-01-15T10:00:00Z",
+  "version": "1.0.0"
+}

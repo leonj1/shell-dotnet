@@ -1,0 +1,473 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.dotnetshell.io/shell-config.json",
+  "title": "DotNet Shell Configuration Schema",
+  "description": "JSON Schema for DotNet Shell application configuration",
+  "type": "object",
+  "properties": {
+    "Shell": {
+      "type": "object",
+      "description": "Main shell configuration settings",
+      "properties": {
+        "Version": {
+          "type": "string",
+          "description": "Shell version",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "default": "1.0.0"
+        },
+        "Name": {
+          "type": "string",
+          "description": "Shell application name",
+          "minLength": 1,
+          "maxLength": 100,
+          "default": "DotNetShell"
+        },
+        "Environment": {
+          "type": "string",
+          "description": "Runtime environment",
+          "enum": ["Development", "Staging", "Production"],
+          "default": "Development"
+        },
+        "Modules": {
+          "type": "object",
+          "description": "Module loading and management settings",
+          "properties": {
+            "Source": {
+              "type": "string",
+              "description": "Path to modules directory",
+              "default": "./modules"
+            },
+            "AutoLoad": {
+              "type": "boolean",
+              "description": "Automatically load modules on startup",
+              "default": true
+            },
+            "ReloadOnChange": {
+              "type": "boolean",
+              "description": "Reload modules when files change",
+              "default": true
+            },
+            "ValidateOnLoad": {
+              "type": "boolean",
+              "description": "Validate modules when loading",
+              "default": true
+            },
+            "MaxConcurrentModules": {
+              "type": "integer",
+              "description": "Maximum number of concurrent modules",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "LoadTimeoutSeconds": {
+              "type": "integer",
+              "description": "Module load timeout in seconds",
+              "minimum": 1,
+              "maximum": 300,
+              "default": 30
+            }
+          },
+          "required": ["Source"]
+        },
+        "Services": {
+          "type": "object",
+          "description": "Infrastructure services configuration",
+          "properties": {
+            "Authentication": {
+              "type": "object",
+              "description": "Authentication service settings",
+              "properties": {
+                "Enabled": {
+                  "type": "boolean",
+                  "description": "Enable authentication service",
+                  "default": true
+                },
+                "DefaultProvider": {
+                  "type": "string",
+                  "description": "Default authentication provider",
+                  "enum": ["JWT", "OAuth2", "AzureAD"],
+                  "default": "JWT"
+                },
+                "JWT": {
+                  "type": "object",
+                  "description": "JWT authentication settings",
+                  "properties": {
+                    "Issuer": {
+                      "type": "string",
+                      "description": "JWT issuer",
+                      "default": "DotNetShell"
+                    },
+                    "Audience": {
+                      "type": "string",
+                      "description": "JWT audience",
+                      "default": "DotNetShell.API"
+                    },
+                    "SecretKey": {
+                      "type": "string",
+                      "description": "Secret key for signing tokens (can use placeholder syntax)",
+                      "minLength": 32,
+                      "sensitive": true
+                    },
+                    "ExpireMinutes": {
+                      "type": "integer",
+                      "description": "Token expiration time in minutes",
+                      "minimum": 1,
+                      "maximum": 525600,
+                      "default": 60
+                    },
+                    "RefreshTokenExpireDays": {
+                      "type": "integer",
+                      "description": "Refresh token expiration in days",
+                      "minimum": 1,
+                      "maximum": 365,
+                      "default": 7
+                    },
+                    "RequireHttpsMetadata": {
+                      "type": "boolean",
+                      "description": "Require HTTPS metadata",
+                      "default": true
+                    },
+                    "ValidateIssuerSigningKey": {
+                      "type": "boolean",
+                      "description": "Validate issuer signing key",
+                      "default": true
+                    },
+                    "ValidateIssuer": {
+                      "type": "boolean",
+                      "description": "Validate issuer",
+                      "default": true
+                    },
+                    "ValidateAudience": {
+                      "type": "boolean",
+                      "description": "Validate audience",
+                      "default": true
+                    },
+                    "ClockSkew": {
+                      "type": "string",
+                      "description": "Clock skew tolerance (TimeSpan format)",
+                      "pattern": "^\\d{2}:\\d{2}:\\d{2}$",
+                      "default": "00:05:00"
+                    }
+                  },
+                  "required": ["Issuer", "Audience", "SecretKey"]
+                }
+              }
+            },
+            "Authorization": {
+              "type": "object",
+              "description": "Authorization service settings",
+              "properties": {
+                "Enabled": {
+                  "type": "boolean",
+                  "description": "Enable authorization service",
+                  "default": true
+                },
+                "DefaultPolicy": {
+                  "type": "string",
+                  "description": "Default authorization policy",
+                  "default": "RequireAuthentication"
+                },
+                "CachePolicies": {
+                  "type": "boolean",
+                  "description": "Cache authorization policies",
+                  "default": true
+                },
+                "CacheExpireMinutes": {
+                  "type": "integer",
+                  "description": "Policy cache expiration in minutes",
+                  "minimum": 1,
+                  "maximum": 1440,
+                  "default": 30
+                }
+              }
+            },
+            "Logging": {
+              "type": "object",
+              "description": "Logging service settings",
+              "properties": {
+                "MinLevel": {
+                  "type": "string",
+                  "description": "Minimum log level",
+                  "enum": ["Trace", "Debug", "Information", "Warning", "Error", "Critical"],
+                  "default": "Information"
+                },
+                "IncludeScopes": {
+                  "type": "boolean",
+                  "description": "Include log scopes",
+                  "default": true
+                },
+                "Console": {
+                  "type": "object",
+                  "properties": {
+                    "Enabled": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "IncludeTimestamp": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "TimestampFormat": {
+                      "type": "string",
+                      "default": "yyyy-MM-dd HH:mm:ss"
+                    }
+                  }
+                },
+                "File": {
+                  "type": "object",
+                  "properties": {
+                    "Enabled": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "Path": {
+                      "type": "string",
+                      "default": "./logs/shell-.log"
+                    },
+                    "RollingInterval": {
+                      "type": "string",
+                      "enum": ["Infinite", "Year", "Month", "Day", "Hour", "Minute"],
+                      "default": "Day"
+                    },
+                    "RetainedFileCountLimit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 365,
+                      "default": 31
+                    },
+                    "FileSizeLimitBytes": {
+                      "type": "integer",
+                      "minimum": 1024,
+                      "default": 104857600
+                    }
+                  }
+                }
+              }
+            },
+            "Telemetry": {
+              "type": "object",
+              "description": "Telemetry service settings",
+              "properties": {
+                "Enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "ServiceName": {
+                  "type": "string",
+                  "default": "DotNetShell"
+                },
+                "ServiceVersion": {
+                  "type": "string",
+                  "default": "1.0.0"
+                },
+                "Console": {
+                  "type": "object",
+                  "properties": {
+                    "Enabled": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  }
+                },
+                "Tracing": {
+                  "type": "object",
+                  "properties": {
+                    "Enabled": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "SampleRatio": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0,
+                      "default": 1.0
+                    }
+                  }
+                },
+                "Metrics": {
+                  "type": "object",
+                  "properties": {
+                    "Enabled": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "ExportIntervalMilliseconds": {
+                      "type": "integer",
+                      "minimum": 1000,
+                      "maximum": 300000,
+                      "default": 30000
+                    }
+                  }
+                }
+              }
+            },
+            "HealthChecks": {
+              "type": "object",
+              "description": "Health check settings",
+              "properties": {
+                "Enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "Endpoints": {
+                  "type": "object",
+                  "properties": {
+                    "Liveness": {
+                      "type": "string",
+                      "default": "/health/live"
+                    },
+                    "Readiness": {
+                      "type": "string",
+                      "default": "/health/ready"
+                    },
+                    "Startup": {
+                      "type": "string",
+                      "default": "/health/startup"
+                    }
+                  }
+                },
+                "CheckInterval": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}:\\d{2}$",
+                  "default": "00:00:30"
+                },
+                "Timeout": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}:\\d{2}$",
+                  "default": "00:00:10"
+                }
+              }
+            }
+          }
+        },
+        "Kestrel": {
+          "type": "object",
+          "description": "Kestrel web server configuration",
+          "properties": {
+            "Endpoints": {
+              "type": "object",
+              "properties": {
+                "Http": {
+                  "type": "object",
+                  "properties": {
+                    "Url": {
+                      "type": "string",
+                      "format": "uri",
+                      "default": "http://localhost:5000"
+                    }
+                  }
+                },
+                "Https": {
+                  "type": "object",
+                  "properties": {
+                    "Url": {
+                      "type": "string",
+                      "format": "uri",
+                      "default": "https://localhost:5001"
+                    }
+                  }
+                }
+              }
+            },
+            "Limits": {
+              "type": "object",
+              "properties": {
+                "MaxConcurrentConnections": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000,
+                  "default": 100
+                },
+                "MaxConcurrentUpgradedConnections": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000,
+                  "default": 100
+                },
+                "MaxRequestBodySize": {
+                  "type": "integer",
+                  "minimum": 1024,
+                  "maximum": 1073741824,
+                  "default": 30000000
+                },
+                "RequestHeadersTimeout": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}:\\d{2}$",
+                  "default": "00:00:30"
+                },
+                "ResponseDrainTimeout": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}:\\d{2}$",
+                  "default": "00:00:05"
+                }
+              }
+            }
+          }
+        },
+        "Swagger": {
+          "type": "object",
+          "description": "Swagger/OpenAPI configuration",
+          "properties": {
+            "Enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "Title": {
+              "type": "string",
+              "default": "DotNet Shell API"
+            },
+            "Version": {
+              "type": "string",
+              "default": "v1"
+            },
+            "Description": {
+              "type": "string",
+              "default": "Enterprise-grade modular hosting framework for .NET applications"
+            },
+            "Contact": {
+              "type": "object",
+              "properties": {
+                "Name": {
+                  "type": "string",
+                  "default": "Development Team"
+                },
+                "Email": {
+                  "type": "string",
+                  "format": "email",
+                  "default": "dev@company.com"
+                },
+                "Url": {
+                  "type": "string",
+                  "format": "uri",
+                  "default": "https://github.com/company/shell-dotnet-core"
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["Version", "Name", "Environment", "Modules", "Services"]
+    },
+    "ConnectionStrings": {
+      "type": "object",
+      "description": "Database connection strings",
+      "patternProperties": {
+        ".*": {
+          "type": "string",
+          "description": "Connection string (can use placeholder syntax for secrets)"
+        }
+      }
+    },
+    "Features": {
+      "type": "object",
+      "description": "Feature flags",
+      "patternProperties": {
+        ".*": {
+          "type": "boolean",
+          "description": "Feature flag value"
+        }
+      }
+    }
+  },
+  "required": ["Shell"]
+}
