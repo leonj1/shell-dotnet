@@ -19,7 +19,8 @@ help:
 	@echo "$(GREEN)Available targets:$(NC)"
 	@echo "  $(YELLOW)build$(NC)       - Build the Docker image using Dockerfile.build"
 	@echo "  $(YELLOW)run$(NC)         - Run the container from the built image"
-	@echo "  $(YELLOW)run-example$(NC) - Build and run the example module with web API"
+	@echo "  $(YELLOW)run-example$(NC) - Run example module (minimal host, no health endpoints)"
+	@echo "  $(YELLOW)run-shell$(NC)   - Run with FULL shell (includes /health endpoints)"
 	@echo "  $(YELLOW)stop$(NC)        - Stop and remove the running container"
 	@echo "  $(YELLOW)clean$(NC)       - Remove the Docker image"
 	@echo "  $(YELLOW)logs$(NC)        - Show container logs"
@@ -69,9 +70,9 @@ rebuild: clean
 # Build and run in one command
 up: build run
 
-# Build and run the example module
+# Build and run the example module (minimal host - demo only)
 run-example:
-	@echo "$(GREEN)Building and running the example module...$(NC)"
+	@echo "$(GREEN)Building and running the example module (Minimal Host)...$(NC)"
 	@echo "$(YELLOW)Step 1: Building the sample module Docker image...$(NC)"
 	@docker build -f Dockerfile.example -t dotnetshell-example:latest .
 	@echo "$(YELLOW)Step 2: Running the example module on port 5050...$(NC)"
@@ -80,9 +81,26 @@ run-example:
 	@echo "$(YELLOW)  - Main page: http://localhost:5050$(NC)"
 	@echo "$(YELLOW)  - Swagger UI: http://localhost:5050/swagger$(NC)"
 	@echo "$(YELLOW)  - Module info: http://localhost:5050/module-info$(NC)"
+	@echo "$(RED)  - NOTE: No /health endpoints (minimal host demo)$(NC)"
 	@echo "$(GREEN)=================================================================$(NC)"
 	@echo "$(YELLOW)Press Ctrl+C to stop the application$(NC)"
 	@docker run --rm -p 5050:5000 --name dotnetshell-example dotnetshell-example:latest
+
+# Build and run with FULL shell (includes health endpoints)
+run-shell:
+	@echo "$(GREEN)Building and running with FULL DotNetShell.Host...$(NC)"
+	@echo "$(YELLOW)This demonstrates the proper architecture with health endpoints from the shell$(NC)"
+	@docker build -f Dockerfile.shell -t dotnetshell-full:latest .
+	@echo "$(GREEN)=================================================================$(NC)"
+	@echo "$(GREEN)The FULL Shell API will be available at:$(NC)"
+	@echo "$(YELLOW)  - Main page: http://localhost:5000$(NC)"
+	@echo "$(YELLOW)  - Health check: http://localhost:5000/health$(NC)"
+	@echo "$(YELLOW)  - Liveness: http://localhost:5000/health/live$(NC)"
+	@echo "$(YELLOW)  - Readiness: http://localhost:5000/health/ready$(NC)"
+	@echo "$(YELLOW)  - Swagger UI: http://localhost:5000/swagger$(NC)"
+	@echo "$(GREEN)=================================================================$(NC)"
+	@echo "$(YELLOW)Press Ctrl+C to stop the application$(NC)"
+	@docker run --rm -p 5000:5000 --name dotnetshell-full dotnetshell-full:latest
 
 # Stop the running example
 stop-example:

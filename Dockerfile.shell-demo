@@ -1,0 +1,122 @@
+# Demonstration of how the SHELL provides health endpoints
+# This creates a minimal shell that shows health endpoints come from the host, not modules
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /app
+
+# Create a minimal shell host that provides health endpoints
+RUN dotnet new webapi -n ShellDemo --no-https -f net9.0
+WORKDIR /app/ShellDemo
+
+# Add required packages
+RUN dotnet add package Swashbuckle.AspNetCore -v 7.0.0
+
+# Create the shell host with built-in health endpoints
+RUN cat > Program.cs <<'EOF'
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.OpenApi.Models;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Shell services (provided by the shell, not modules)
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "DotNetShell Host API",
+        Version = "v1",
+        Description = "This is the SHELL that provides infrastructure including health endpoints"
+    });
+});
+
+// SHELL PROVIDES HEALTH CHECKS - Not the modules!
+builder.Services.AddHealthChecks()
+    .AddCheck("shell_core", () =>
+        HealthCheckResult.Healthy("Shell core is operational"));
+
+var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "DotNetShell Host API v1");
+});
+
+// SHELL PROVIDES THESE HEALTH ENDPOINTS AUTOMATICALLY
+// Modules DO NOT need to define these
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            }),
+            totalDuration = report.TotalDuration,
+            info = "Health endpoints provided by SHELL, not modules"
+        });
+        await context.Response.WriteAsync(json);
+    }
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = async (context, report) =>
+    {
+        await context.Response.WriteAsync($"Liveness: {report.Status} (from SHELL)");
+    }
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = async (context, report) =>
+    {
+        await context.Response.WriteAsync($"Readiness: {report.Status} (from SHELL)");
+    }
+});
+
+// Main endpoint showing this is the shell
+app.MapGet("/", () => new
+{
+    message = "This is the DotNetShell HOST",
+    provides = new[]
+    {
+        "/health - General health (PROVIDED BY SHELL)",
+        "/health/live - Liveness (PROVIDED BY SHELL)",
+        "/health/ready - Readiness (PROVIDED BY SHELL)",
+        "/swagger - API Documentation (PROVIDED BY SHELL)"
+    },
+    info = "Modules loaded into this shell get these endpoints automatically without defining them"
+});
+
+Console.WriteLine("==============================================");
+Console.WriteLine("DotNetShell HOST Starting");
+Console.WriteLine("This shell provides health endpoints to ALL modules");
+Console.WriteLine("Modules DO NOT define /health endpoints");
+Console.WriteLine("==============================================");
+
+app.Run();
+EOF
+
+RUN dotnet build -c Release
+RUN dotnet publish -c Release -o /app/publish --no-build
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://+:5000
+EXPOSE 5000
+
+ENTRYPOINT ["dotnet", "ShellDemo.dll"]
