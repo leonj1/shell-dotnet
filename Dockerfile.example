@@ -42,6 +42,9 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Sample Module API", Version = "v1" });
 });
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 // Initialize the sample module
 var sampleModule = new SampleModule();
 await sampleModule.OnInitializeAsync(builder.Services);
@@ -59,6 +62,12 @@ app.UseSwaggerUI(c =>
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
+
+// Map health check endpoints
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live");
+app.MapHealthChecks("/health/ready");
+app.MapHealthChecks("/health/startup");
 
 // Configure sample module
 await sampleModule.OnConfigureAsync(app);
@@ -105,6 +114,11 @@ app.MapGet("/module-info", async () =>
 Console.WriteLine($"Starting {sampleModule.Name} v{sampleModule.Version}...");
 Console.WriteLine("Navigate to http://localhost:5000 to see the API");
 Console.WriteLine("Swagger UI available at http://localhost:5000/swagger");
+Console.WriteLine("Health endpoints available at:");
+Console.WriteLine("  - /health - General health check");
+Console.WriteLine("  - /health/live - Liveness check");
+Console.WriteLine("  - /health/ready - Readiness check");
+Console.WriteLine("  - /health/startup - Startup check");
 
 app.Run();
 EOF
