@@ -2,21 +2,20 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /source
 
-# Create a simple console application to verify build works
-RUN dotnet new console -n TestApp -o /source/TestApp
-WORKDIR /source/TestApp
+# Copy all project files
+COPY . .
 
-# Build the test application
-RUN dotnet build -c Release
+# Build the sample application to validate it compiles
+RUN dotnet build samples/SampleBusinessLogic/SampleBusinessLogic.csproj -c Release /p:TreatWarningsAsErrors=false
 
-# Publish the test application
-RUN dotnet publish -c Release -o /app/publish --no-build
+# Publish the sample application
+RUN dotnet publish samples/SampleBusinessLogic/SampleBusinessLogic.csproj -c Release -o /app/publish --no-build
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/runtime:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Install curl for health checks (if needed for web apps)
+# Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -28,8 +27,14 @@ COPY --from=build --chown=dotnetapp:dotnetapp /app/publish .
 # Switch to non-root user
 USER dotnetapp
 
-# Configure .NET runtime
+# Configure ASP.NET Core
+ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-# Entry point
-ENTRYPOINT ["dotnet", "TestApp.dll"]
+# Expose port
+EXPOSE 5000
+
+# Note: This is a module/library, not a standalone application
+# In a real scenario, this would be loaded by the Shell Host
+ENTRYPOINT ["echo", "Sample module built successfully. This is a library module that should be loaded by DotNetShell.Host"]

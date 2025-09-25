@@ -1,4 +1,6 @@
-namespace SampleBusinessLogic;
+using SampleBusinessLogic.Services;
+
+namespace SampleBusinessLogic.Repository;
 
 /// <summary>
 /// Interface for sample repository operations.

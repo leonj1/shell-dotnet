@@ -1,0 +1,136 @@
+# Dockerfile for running the SampleBusinessLogic module with a minimal host
+# This demonstrates how to use the sample module in a web application
+
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /source
+
+# Copy all files
+COPY . .
+
+# Build the sample module
+RUN dotnet build samples/SampleBusinessLogic/SampleBusinessLogic.csproj -c Release /p:TreatWarningsAsErrors=false
+
+# Create a minimal host application for the sample module
+WORKDIR /app/host
+RUN dotnet new webapi -n MinimalHost --no-https -f net9.0
+
+# Add reference to the sample module
+WORKDIR /app/host/MinimalHost
+RUN dotnet add reference /source/samples/SampleBusinessLogic/SampleBusinessLogic.csproj
+
+# Add Swagger packages
+RUN dotnet add package Swashbuckle.AspNetCore -v 7.0.0
+
+# Create the Program.cs file with proper module integration
+RUN cat > Program.cs <<'EOF'
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
+using SampleBusinessLogic;
+using SampleBusinessLogic.Services;
+using SampleBusinessLogic.Repository;
+using SampleBusinessLogic.Controllers;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(SampleController).Assembly);
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Sample Module API", Version = "v1" });
+});
+
+// Initialize the sample module
+var sampleModule = new SampleModule();
+await sampleModule.OnInitializeAsync(builder.Services);
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sample Module API v1");
+    c.RoutePrefix = "swagger";
+});
+
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllers();
+
+// Configure sample module
+await sampleModule.OnConfigureAsync(app);
+await sampleModule.OnStartAsync();
+
+// Add a root endpoint
+app.MapGet("/", () => Results.Ok(new
+{
+    message = "Sample Module Host is running!",
+    module = sampleModule.Name,
+    version = sampleModule.Version.ToString(),
+    endpoints = new[]
+    {
+        "/swagger - API Documentation",
+        "/api/sample/message - Get sample message",
+        "/api/sample/process - Process sample data (POST)",
+        "/api/sample/health - Module health check"
+    }
+}));
+
+// Add module info endpoint
+app.MapGet("/module-info", async () =>
+{
+    var healthResult = await sampleModule.CheckHealthAsync();
+    return Results.Ok(new
+    {
+        module = new
+        {
+            name = sampleModule.Name,
+            version = sampleModule.Version.ToString(),
+            description = sampleModule.Description,
+            author = sampleModule.Author,
+            isEnabled = sampleModule.IsEnabled
+        },
+        metadata = sampleModule.Metadata,
+        health = new
+        {
+            status = healthResult.Status.ToString(),
+            description = healthResult.Description
+        }
+    });
+});
+
+Console.WriteLine($"Starting {sampleModule.Name} v{sampleModule.Version}...");
+Console.WriteLine("Navigate to http://localhost:5000 to see the API");
+Console.WriteLine("Swagger UI available at http://localhost:5000/swagger");
+
+app.Run();
+EOF
+
+# Build and publish the application
+RUN dotnet build -c Release
+RUN dotnet publish -c Release -o /app/publish --no-build
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+
+# Copy published output
+COPY --from=build /app/publish .
+
+# Configure ASP.NET Core
+ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_ENVIRONMENT=Development
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/api/sample/health || exit 1
+
+# Entry point
+ENTRYPOINT ["dotnet", "MinimalHost.dll"]

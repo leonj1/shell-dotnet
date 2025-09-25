@@ -1,4 +1,4 @@
-namespace SampleBusinessLogic;
+namespace SampleBusinessLogic.Services;
 
 /// <summary>
 /// Interface for sample business service.

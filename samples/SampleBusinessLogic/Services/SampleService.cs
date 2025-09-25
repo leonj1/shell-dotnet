@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
+using SampleBusinessLogic.Repository;
 
-namespace SampleBusinessLogic;
+namespace SampleBusinessLogic.Services;
 
 /// <summary>
 /// Implementation of sample business service.

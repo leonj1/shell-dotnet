@@ -17,13 +17,14 @@ NC := \033[0m # No Color
 # Default target
 help:
 	@echo "$(GREEN)Available targets:$(NC)"
-	@echo "  $(YELLOW)build$(NC)    - Build the Docker image using Dockerfile.build"
-	@echo "  $(YELLOW)run$(NC)      - Run the container from the built image"
-	@echo "  $(YELLOW)stop$(NC)     - Stop and remove the running container"
-	@echo "  $(YELLOW)clean$(NC)    - Remove the Docker image"
-	@echo "  $(YELLOW)logs$(NC)     - Show container logs"
-	@echo "  $(YELLOW)shell$(NC)    - Open a shell in the running container"
-	@echo "  $(YELLOW)rebuild$(NC)  - Clean and build the image (force rebuild)"
+	@echo "  $(YELLOW)build$(NC)       - Build the Docker image using Dockerfile.build"
+	@echo "  $(YELLOW)run$(NC)         - Run the container from the built image"
+	@echo "  $(YELLOW)run-example$(NC) - Build and run the example module with web API"
+	@echo "  $(YELLOW)stop$(NC)        - Stop and remove the running container"
+	@echo "  $(YELLOW)clean$(NC)       - Remove the Docker image"
+	@echo "  $(YELLOW)logs$(NC)        - Show container logs"
+	@echo "  $(YELLOW)shell$(NC)       - Open a shell in the running container"
+	@echo "  $(YELLOW)rebuild$(NC)     - Clean and build the image (force rebuild)"
 
 # Build the Docker image
 build:
@@ -67,6 +68,34 @@ rebuild: clean
 
 # Build and run in one command
 up: build run
+
+# Build and run the example module
+run-example:
+	@echo "$(GREEN)Building and running the example module...$(NC)"
+	@echo "$(YELLOW)Step 1: Building the sample module Docker image...$(NC)"
+	@docker build -f Dockerfile.example -t dotnetshell-example:latest .
+	@echo "$(YELLOW)Step 2: Running the example module on port 5050...$(NC)"
+	@echo "$(GREEN)=================================================================$(NC)"
+	@echo "$(GREEN)The sample API will be available at:$(NC)"
+	@echo "$(YELLOW)  - Main page: http://localhost:5050$(NC)"
+	@echo "$(YELLOW)  - Swagger UI: http://localhost:5050/swagger$(NC)"
+	@echo "$(YELLOW)  - Module info: http://localhost:5050/module-info$(NC)"
+	@echo "$(GREEN)=================================================================$(NC)"
+	@echo "$(YELLOW)Press Ctrl+C to stop the application$(NC)"
+	@docker run --rm -p 5050:5000 --name dotnetshell-example dotnetshell-example:latest
+
+# Stop the running example
+stop-example:
+	@echo "$(YELLOW)Stopping example container...$(NC)"
+	-docker stop dotnetshell-example 2>/dev/null || true
+	@echo "$(GREEN)Example stopped.$(NC)"
+
+# Clean up example artifacts
+clean-example:
+	@echo "$(YELLOW)Removing example Docker image...$(NC)"
+	-docker rmi dotnetshell-example:latest 2>/dev/null || true
+	-rm -f Dockerfile.example 2>/dev/null || true
+	@echo "$(GREEN)Example artifacts cleaned.$(NC)"
 
 # Check if Docker is installed and running
 check-docker:

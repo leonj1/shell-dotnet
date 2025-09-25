@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using SampleBusinessLogic.Services;
 
-namespace SampleBusinessLogic;
+namespace SampleBusinessLogic.Repository;
 
 /// <summary>
 /// In-memory implementation of sample repository for demonstration purposes.
