@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -102,9 +103,11 @@ public class SampleController : ControllerBase
 
     /// <summary>
     /// Gets health status of the sample module.
+    /// This endpoint is explicitly marked with AllowAnonymous for health monitoring.
     /// </summary>
     /// <returns>Health status information.</returns>
     [HttpGet("health")]
+    [AllowAnonymous] // Health endpoint should be accessible without authentication
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public ActionResult<object> GetHealth()
     {
