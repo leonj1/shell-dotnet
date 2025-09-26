@@ -146,6 +146,9 @@ public class ShellStartup
         // Use authorization
         app.UseAuthorization();
 
+        // Use guest endpoint authentication enforcement
+        app.UseGuestEndpointAuthentication();
+
         // Configure endpoints
         app.UseEndpoints(endpoints =>
         {
